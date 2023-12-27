@@ -57,13 +57,15 @@ const urls = fileMetadata.map((key: string) => {
   <body class="p-5 underline text-blue-700">
     <a href="javascript:location.reload()" class="block"> /</a>
     {
-      urls.map((item, index) => {
-        return (
-          <a href={item} class="block">
-            {fileMetadata[index]}
-          </a>
-        );
-      })
+      urls.map(
+        (item: string | URL | null | undefined, index: string | number) => {
+          return (
+            <a href={item} class="block">
+              {fileMetadata[index]}
+            </a>
+          );
+        }
+      )
     }
   </body>
 </html>
