@@ -1,0 +1,69 @@
+---
+import AWS, { S3 } from "aws-sdk";
+import type { String } from "aws-sdk/clients/acm";
+const credentials = {
+  accessKeyId: import.meta.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: import.meta.env.AWS_SECRET_ACCESS_KEY,
+};
+
+AWS.config.update({ region: "us-east-1", credentials: credentials });
+const s3 = new AWS.S3();
+async function listFilesFromS3(
+  s3Request: S3.ListObjectsV2Request,
+  allKeys: Array<string>
+) {
+  try {
+    const data: S3.ListObjectsV2Output = await s3
+      .listObjectsV2(s3Request)
+      .promise();
+    let contents = data.Contents;
+    contents?.forEach(function (content) {
+      allKeys.push(content?.Key ?? "");
+    });
+    if (data.IsTruncated) {
+      s3Request.ContinuationToken = data.NextContinuationToken;
+      return listFilesFromS3(s3Request, allKeys);
+    } else {
+      return allKeys;
+    }
+  } catch (error) {
+    console.log(error);
+    return error;
+  }
+}
+
+const fileMetadata: any = await listFilesFromS3(
+  { Bucket: "jedborsethaws", Prefix: "videos/" },
+  []
+);
+fileMetadata.shift();
+const urls = fileMetadata.map((key: string) => {
+  return s3.getSignedUrl("getObject", {
+    Bucket: "jedborsethaws",
+    Key: key,
+    Expires: 60 * 60 * 24 * 7,
+  });
+});
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Astro</title>
+  </head>
+  <body class="p-5 underline text-blue-700">
+    <a href="javascript:location.reload()" class="block"> /</a>
+    {
+      urls.map((item, index) => {
+        return (
+          <a href={item} class="block">
+            {fileMetadata[index]}
+          </a>
+        );
+      })
+    }
+  </body>
+</html>
